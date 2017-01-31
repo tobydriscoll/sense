@@ -27,6 +27,14 @@ function [t,solution,par_sensitivities,var_sensitivities,Ju,Jp] = sense(fun,tspa
 %           component of f wrt first parameter, second is each component wrt
 %           2nd, etc.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if nargin < 6
+    opts = odeset;  % use built-in defaults
+    if nargin < 5
+        solver = @ode45;
+    end
+    if ischar(solver), solver = str2func(solver); end    
+end
+
 nvar = length(u0);
 npar = length(param);
 initsense = reshape(eye(nvar),[],1);
@@ -35,15 +43,7 @@ if nvar>1 && npar>1
     v0(1:nvar) = u0;
     v0(end-length(initsense)+1:end) = initsense;
     f = @(t,u) odefun1(t,u,param,fun,nvar,npar);
-    if nargin < 5
-        [t,u] = ode45(f,tspan,v0);
-    elseif nargin == 5
-        [t,u] = solver(f,tspan,v0);
-    elseif nargin == 6 && isempty(solver) == 1
-        [t,u] = ode45(f,tspan,v0,opts);
-    elseif nargin == 6 && isempty(solver) == 0
-        [t,u] = solver(f,tspan,v0,opts);
-    end
+    [t,u] = solver(f,tspan,v0,opts);
     solution = u(:,1:nvar);
     par_sensitivities = u(:,nvar+1:nvar+nvar*npar);
     Ju_ = u(:,nvar+nvar*npar+1:nvar+nvar*npar+nvar*nvar);
@@ -74,15 +74,7 @@ elseif nvar == 1 && npar >1
     v0 = zeros(3+2*npar,1);
     v0(1) = u0;
     f = @(t,u) odefun2(t,u,param,fun,1,npar);
-    if nargin < 5
-        [t,u] = ode45(f,tspan,v0);
-    elseif nargin == 5
-        [t,u] = solver(f,tspan,v0);
-    elseif nargin == 6 && isempty(solver) == 1
-        [t,u] = ode45(f,tspan,v0,opts);
-    elseif nargin == 6 && isempty(solver) == 0
-        [t,u] = solver(f,tspan,v0,opts);
-    end
+    [t,u] = solver(f,tspan,v0,opts);
     solution = u(:,1);
     par_sensitivities = u(:,2:1+npar);
     Ju = u(:,2+npar)';
@@ -92,15 +84,7 @@ elseif nvar > 1 && npar == 1
     v0 = zeros(nvar*(4+nvar),1);
     v0(1:nvar) = u0;
     f = @(t,u) odefun3(t,u,param,fun,nvar,1);
-    if nargin < 5
-        [t,u] = ode45(f,tspan,v0);
-    elseif nargin == 5
-        [t,u] = solver(f,tspan,v0);
-    elseif nargin == 6 && isempty(solver) == 1
-        [t,u] = ode45(f,tspan,v0,opts);
-    elseif nargin == 6 && isempty(solver) == 0
-        [t,u] = solver(f,tspan,v0,opts);
-    end
+    [t,u] = solver(f,tspan,v0,opts);
     solution = u(:,1:nvar);
     par_sensitivities = u(:,nvar+1:2*nvar);
     Ju_ = u(:,2*nvar+1:2*nvar+nvar*nvar);
@@ -120,15 +104,7 @@ elseif nvar == 1 && npar == 1
     v0 = zeros(6,1);
     v0(1) = u0;
     f = @(t,u) odefun4(t,u,param,fun,nvar,npar);
-    if nargin < 5
-        [t,u] = ode45(f,tspan,v0);
-    elseif nargin == 5
-        [t,u] = solver(f,tspan,v0);
-    elseif nargin == 6 && isempty(solver) == 1
-        [t,u] = ode45(f,tspan,v0);
-    elseif nargin == 6 && isempty(solver) == 0
-        [t,u] = solver(f,tspan,v0);
-    end
+    [t,u] = solver(f,tspan,v0,opts);
     solution = u(:,1);
     par_sensitivities = u(:,2);
     Ju = u(:,3);
