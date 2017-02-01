@@ -52,12 +52,22 @@ classdef valder
       end
       function h = mtimes(u,v)
          %VALDER/MTIMES overloads multiplication * with at least one valder object argument
-         if ~isa(u,'valder') %u is a scalar
+         if ~isa(u,'valder') %u is a constant
             h = valder(u*v.val, u*v.der);
-         elseif ~isa(v,'valder') %v is a scalar
-            h = valder(v*u.val, v*u.der);
+         elseif ~isa(v,'valder') %v is a constant
+            h = valder(u.val*v, u.der*v);
          else
             h = valder(u.val*v.val, u.der*v.val + u.val*v.der);
+         end
+      end
+      function h = times(u,v)
+         %VALDER/TIMES overloads .* with at least one valder object argument
+         if ~isa(u,'valder') % u is a constant
+            h = valder(u.*v.val, diag(u)*v.der);
+         elseif ~isa(v,'valder') % v is a constant
+            h = valder(v.*u.val, diag(v)*u.der);
+         else
+            h = valder(u.val.*v.val, diag(v.val)*u.der + diag(u.val)*v.der);
          end
       end
       function h = mrdivide(u,v)
@@ -111,6 +121,19 @@ classdef valder
       function h = atan(u)
          %VALDER/ATAN overloads arctangent of a valder object argument
          h = valder(atan(u.val), u.der/(1+u.val^2));
+      end
+      function x = subsref(u,s)
+          %VALDER/SUBSREF allows access to val/der fields with subscripts. 
+          if length(s)==1 && isequal(s(1).type,'()')
+              x = subsref(u.val,s);
+          elseif isequal(s(1).type,'.')
+              x = u.(s(1).subs);
+              if length(s) > 1
+                  x = subsref(x,s(2:end));
+              end
+          else
+              error('Subscripted reference not defined.')
+          end
       end
    end
 end
