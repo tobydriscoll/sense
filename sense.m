@@ -1,20 +1,16 @@
 function [t,solution,J,jacvar,jacpar] = sense(fun,tspan,u0,param,solver,opts)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%SENSE Utilizes automatic differentiation to find the sensitivity of a
-%system of first-order differential equations to the parameters of the
-%system.
+%SENSE Sensitivity of a differential equation to parameters. 
 %INPUTS:
-%   fun     dudt = fun(t,u,v) (n x 1)
+%   fun     defines dudt = fun(t,u,p) (n x 1)
 %   tspan   time span of interest
 %   u0      initial values of the variables for fun (n x 1)
 %   param   values of parameters for fun (m x 1)
-%   solver  solver to be used by the function. if empty, uses ode45 as
-%           default
-%   opts    MATLAB ODE solver options. If empty, uses default options as
-%           defined by MATLAB
+%   solver  IVP solver to be used (optional, default is @ode45)
+%   opts    IVP solver options (optional, see odeset)
 %OUTPUTS:
 %   t       time range given by ode solver
-%   soln    solution to dudt = fun(t,u,v) for initial value u0 and timespan
+%   u       solution to dudt = fun(t,u,v) for initial value u0 and timespan
 %           tspan (n x length(t))
 %   par_sensitivities   sensitivity to fun with respect to each parameter,
 %                       formatted as (1:n,:) = sensitivity of fun to first
