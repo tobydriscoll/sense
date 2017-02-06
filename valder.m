@@ -135,7 +135,7 @@ classdef valder
         end
         function h = tan(u)
             %VALDER/TAN overloads tangent of a valder object argument
-            h = valder(tan(u.val), diag(sec(u.val)).^2)*u.der);
+            h = valder(tan(u.val), diag(sec(u.val).^2)*u.der);
         end
         function h = asin(u)
             %VALDER/ASIN overloads arcsine of a valder object argument
