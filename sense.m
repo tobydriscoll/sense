@@ -39,9 +39,9 @@ nvar = length(u0);
 
 v0 = [ u0; zeros(nvar*npar,1) ];
 [t,v] = solver(@odefun,tspan,v0,opts);
-solution = v(:,1:nvar).';
+solution = v(:,1:nvar);
 nt = length(t);
-J = reshape( v(:,nvar+(1:nvar*npar)).',[nvar npar nt] ); 
+J = reshape( v(:,nvar+(1:nvar*npar)),[nt nvar npar] ); 
 jacvar = @dfun_dvar;
 jacpar = @dfun_dpar;
 
