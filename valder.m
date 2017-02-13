@@ -146,9 +146,12 @@ classdef valder
             h = valder(atan(u.val), diag(1./(1+u.val.^2))*u.der);
         end
         function x = subsref(u,s)
-            %VALDER/SUBSREF allows access to val/der fields with subscripts.
+            %VALDER/SUBSREF allows access to components and val/der fields
             if length(s)==1 && isequal(s(1).type,'()')
-                x = subsref(u.val,s);
+                v = subsref(u.val,s);
+                s.subs = { s.subs{1}, ':' };
+                d = subsref(u.der,s);
+                x = valder(v,d);
             elseif isequal(s(1).type,'.')
                 x = u.(s(1).subs);
                 if length(s) > 1
@@ -157,6 +160,24 @@ classdef valder
             else
                 error('Subscripted reference not defined.')
             end
+        end
+        function w = vertcat(varargin)
+            %VALDER/VERTCAT stacks compatable valders
+            % need to determine the size of the Jacobian
+            i = find( cellfun(@(x) isa(x,'valder'),varargin), 1 );
+            n = size(varargin{i}.der,2);
+            v = cell(1,nargin); d = cell(1,nargin);
+            for i = 1:nargin
+                x = varargin{i};
+                if isa(x,'valder')
+                    v{i} = x.val;
+                    d{i} = x.der;
+                else
+                    v{i} = x;
+                    d{i} = zeros(1,n);
+                end
+            end
+            w = valder(vertcat(v{:}),vertcat(d{:}));
         end
     end
 end
