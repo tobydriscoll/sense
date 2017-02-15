@@ -19,6 +19,8 @@ classdef odesol
         t         % times selected by the integrator
         u         % solution
         stats     % solver statistics
+        nvar      % number of scalar variables
+        npar      % number of scalar parameters
     end
     
     methods
@@ -75,21 +77,51 @@ classdef odesol
             stat = s.solution.stats;
         end
         
+        function n = get.nvar(s)
+            n = length(s.init);
+        end
+        
+        function m = get.npar(s)
+            m = length(s.p);
+        end
+        
         function varargout = eval(s,t,varargin)
             [varargout{1:nargout}] = deval(s.solution,t,varargin{:}).';
         end
+        
+        function varargout = plot(s,varargin)
+            f = @(t) s.eval(t,varargin{:});
+            [varargout{1:nargout}] = fplot(f,s.tspan);
+        end
+        
+        function varargout = phaseplot(s,k)
+            if nargin < 2
+                k = 1:s.nvar;
+            end
+            if length(k)<2 || length(k)>3
+                error('Must have 2 or 3 variables for a phase plot.')
+            end
+            x = @(t) s.eval(t,k(1));
+            y = @(t) s.eval(t,k(2));
+            if length(k)==2
+                [varargout{1:nargout}] = fplot(x,y,s.tspan);
+            elseif length(k)==3
+                z = @(t) s.eval(t,k(3));
+                [varargout{1:nargout}] = fplot3(x,y,z,s.tspan);
+            end
+        end
 
         function Z = sense(s)
-            npar = length(s.p);
-            nvar = length(s.init);
+            np = s.npar;
+            nv = s.nvar;
 
-            z0 = zeros(nvar*npar,1);
+            z0 = zeros(nv*np,1);
             [~,z] = s.solver(@odefun,s.t,z0,s.opts);
             nt = length(s.t);
-            Z = reshape( z,[nt nvar npar] );
+            Z = reshape( z,[nt nv np] );
             
             function dzdt = odefun(t,z)
-                Z = reshape(z,nvar,npar);
+                Z = reshape(z,nv,np);
                 u = s.eval(t);
                 
                 Au = s.dfdu(t,u,s.p);
@@ -100,16 +132,47 @@ classdef odesol
             end
         end
         
-        function lambda = jaceig(s)
-            lambda = NaN(length(s.t),length(s.u));
+        function ev = jaceig(s)
+            ev = NaN(length(s.t),s.nvar);
             for i = 1:length(s.t)
-                lambda(i,:) = eig( s.dfdu(s.t(i),s.u(i,:),s.p) ).';
+                ev(i,:) = eig( s.dfdu(s.t(i),s.u(:,i),s.p) ).';
             end
         end
         
-        
-            
+        function lambda = adjoint(s,phi)
+            % Solve the adjoint equation.           
+            v0 = zeros(size(s.init));
+            lambda = odesol(@odefun,s.tspan([2 1]),v0,s.p,s.solver,s.opts);
+            function dvdt = odefun(t,v,p)
+                Au = s.dfdu(t,s.eval(t),p);
+                dvdt = phi(t) - Au'*v;
+            end
+            lambda.tspan = s.tspan;
         end
+        
+        function v = adjsense(s,g)          
+            
+            function g_u = dgdu(t)
+                u = s.eval(t);
+                u = valder(u,eye(s.nvar));
+                G = g(t,u,s.p);
+                g_u = G.der.';
+            end
+            lambda = s.adjoint(@dgdu);
+            
+            function q = integrand(t)
+                u = s.eval(t);
+                f_p = s.dfdp(t,u,s.p);
+                p = valder(s.p,eye(s.npar));
+                G = g(t,u,p);
+                g_p = G.der;
+                q = g_p - lambda.eval(t)*f_p;
+            end
+            v = integral(@integrand,s.tspan(1),s.tspan(2),...
+                'arrayvalued',true);
+
+        end
+            
     end
         
     
