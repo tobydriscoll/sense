@@ -46,13 +46,23 @@ classdef odesol
             function Au = df_du(t,u,p)
                 u_diff = valder(u,eye(nvar));
                 y = s.dudt(t,u_diff,p);
-                Au = y.der;
+                if isa(y,'valder')
+                    Au = y.der;
+                else
+                    % no dependence on u
+                    Au = zeros(nvar,nvar);
+                end
             end
                 
             function Ap = df_dp(t,u,p)
                 p_diff = valder(p,eye(npar));
                 y = s.dudt(t,u,p_diff);
-                Ap = cat(1,y.der);
+                if isa(y,'valder')
+                    Ap = cat(1,y.der);
+                else
+                    % no dependence on p
+                    Ap = zeros(nvar,npar);
+                end
             end
             
             s.dudt = dudt;
@@ -111,7 +121,7 @@ classdef odesol
             end
         end
 
-        function Z = sense(s)
+        function Z = parsense(s)
             np = s.npar;
             nv = s.nvar;
 
@@ -153,10 +163,15 @@ classdef odesol
         function v = adjsense(s,g)          
             
             function g_u = dgdu(t)
-                u = s.eval(t);
+                u = s.eval(t).';
                 u = valder(u,eye(s.nvar));
                 G = g(t,u,s.p);
-                g_u = G.der.';
+                if isa(G,'valder')
+                    g_u = G.der.';
+                else
+                    % no dependence on u
+                    g_u = zeros(s.nvar,1);
+                end
             end
             lambda = s.adjoint(@dgdu);
             
@@ -165,12 +180,16 @@ classdef odesol
                 f_p = s.dfdp(t,u,s.p);
                 p = valder(s.p,eye(s.npar));
                 G = g(t,u,p);
-                g_p = G.der;
+                if isa(G,'valder')
+                    g_p = G.der;
+                else
+                    % no dependence on p
+                    g_p = zeros(1,s.npar);
+                end
                 q = g_p - lambda.eval(t)*f_p;
             end
             v = integral(@integrand,s.tspan(1),s.tspan(2),...
                 'arrayvalued',true);
-
         end
             
     end
